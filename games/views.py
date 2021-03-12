@@ -4,9 +4,10 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from .models import Game
-from .serializers import GameSerializer
+from rest_framework.reverse import reverse
+from rest_framework import status, generics
+from .models import Game, GameCategory, Player, PlayerScore
+from .serializers import GameSerializer, GameCategorySerializer, PlayerSerializer, PlayerScoreSerializer
 
 
 class JSONResponse(HttpResponse):
@@ -14,6 +15,66 @@ class JSONResponse(HttpResponse):
         content = JSONRenderer().render(data)
         kwargs['content_type'] = 'application/json'
         super(JSONResponse, self).__init__(content, **kwargs)
+
+
+class ApiRootView(generics.GenericAPIView):
+    name = 'api-root'
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            'players': reverse(PlayerListView.name, request=request),
+            'game-categories': reverse(GameCategoryListView.name, request=request),
+            'games': reverse(GameListView.name, request=request),
+            'scores': reverse(PlayerScoreListView.name, request=request)
+        })
+
+
+class GameCategoryListView(generics.ListCreateAPIView):
+    queryset = GameCategory.objects.all()
+    serializer_class = GameCategorySerializer
+    name = 'gamecategory-list'
+
+
+class GameCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = GameCategory.objects.all()
+    serializer_class = GameCategorySerializer
+    name = 'gamecategory-detail'
+
+
+class GameListView(generics.ListCreateAPIView):
+    queryset = Game.objects.all()
+    serializer_class = GameSerializer
+    name = 'game-list'
+
+
+class GameDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Game.objects.all()
+    serializer_class = GameSerializer
+    name = 'game-detail'
+
+
+class PlayerListView(generics.ListCreateAPIView):
+    queryset = Player.objects.all()
+    serializer_class = PlayerSerializer
+    name = 'player-list'
+
+
+class PlayerDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Player.objects.all()
+    serializer_class = PlayerSerializer
+    name = 'player-detail'
+
+
+class PlayerScoreListView(generics.ListCreateAPIView):
+    queryset = PlayerScore.objects.all()
+    serializer_class = PlayerScoreSerializer
+    name = 'playerscore-list'
+
+
+class PlayerScoreDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PlayerScore.objects.all()
+    serializer_class = PlayerScoreSerializer
+    name = 'playerscore-detail'
 
 
 @api_view(['GET', "POST"])
