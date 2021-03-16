@@ -1,13 +1,18 @@
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework import permissions
 from rest_framework import status, generics
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework import filters
+from django_filters import NumberFilter, DateTimeFilter, AllValuesFilter
 from .models import Game, GameCategory, Player, PlayerScore
-from .serializers import GameSerializer, GameCategorySerializer, PlayerSerializer, PlayerScoreSerializer
+from .serializers import UserSerializer, GameSerializer, GameCategorySerializer, PlayerSerializer, PlayerScoreSerializer
+from .permissions import IsOwnerOrReadOnly
 
 
 class JSONResponse(HttpResponse):
@@ -25,38 +30,71 @@ class ApiRootView(generics.GenericAPIView):
             'players': reverse(PlayerListView.name, request=request),
             'game-categories': reverse(GameCategoryListView.name, request=request),
             'games': reverse(GameListView.name, request=request),
-            'scores': reverse(PlayerScoreListView.name, request=request)
+            'scores': reverse(PlayerScoreListView.name, request=request),
+            'users': reverse(UserList.name, request=request)
         })
+
+
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    name = 'user-list'
+
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    name = 'user-detail'
 
 
 class GameCategoryListView(generics.ListCreateAPIView):
     queryset = GameCategory.objects.all()
     serializer_class = GameCategorySerializer
     name = 'gamecategory-list'
+    throttle_scope = 'game-categories'
+    throttle_classes = (ScopedRateThrottle,)
+    filter_fields = ('name',)
+    search_fields = ('^name',)
+    ordering_fields = ('name',)
 
 
 class GameCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GameCategory.objects.all()
     serializer_class = GameCategorySerializer
     name = 'gamecategory-detail'
+    throttle_scope = 'game-categories'
+    throttle_classes = (ScopedRateThrottle,)
 
 
 class GameListView(generics.ListCreateAPIView):
     queryset = Game.objects.all()
     serializer_class = GameSerializer
     name = 'game-list'
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
+    filter_fields = (
+        'name', 'game_category', 'release_date', 'played', 'owner',
+    )
+    search_fields = ('^name',)
+    ordering_fields = ('name', 'release_date',)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 
 class GameDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Game.objects.all()
     serializer_class = GameSerializer
     name = 'game-detail'
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
 
 
 class PlayerListView(generics.ListCreateAPIView):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
     name = 'player-list'
+    filter_fields = ('name', 'gender',)
+    search_fields = ('^name',)
+    ordering_fields = ('name',)
 
 
 class PlayerDetailView(generics.RetrieveUpdateDestroyAPIView):

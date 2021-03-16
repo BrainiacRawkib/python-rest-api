@@ -11,5 +11,7 @@ urlpatterns = [
     url(r'^players/(?P<pk>[0-9]+)/$', PlayerDetailView.as_view(), name=PlayerDetailView.name),
     url(r'^player-scores/$', PlayerScoreListView.as_view(), name=PlayerScoreListView.name),
     url(r'^player-scores/(?P<pk>[0-9]+)/$', PlayerScoreDetailView.as_view(), name=PlayerScoreDetailView.name),
+    url(r'^users/$', UserList.as_view(), name=UserList.name),
+    url(r'^users/(?P<pk>[0-9]+)/$', UserDetail.as_view(), name=UserDetail.name),
     url(r'^$', ApiRootView.as_view(), name=ApiRootView.name),
 ]
