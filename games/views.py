@@ -8,8 +8,7 @@ from rest_framework.reverse import reverse
 from rest_framework import permissions
 from rest_framework import status, generics
 from rest_framework.throttling import ScopedRateThrottle
-from rest_framework import filters
-from django_filters import NumberFilter, DateTimeFilter, AllValuesFilter
+from django_filters import NumberFilter, DateTimeFilter, AllValuesFilter, FilterSet
 from .models import Game, GameCategory, Player, PlayerScore
 from .serializers import UserSerializer, GameSerializer, GameCategorySerializer, PlayerSerializer, PlayerScoreSerializer
 from .permissions import IsOwnerOrReadOnly
@@ -31,17 +30,17 @@ class ApiRootView(generics.GenericAPIView):
             'game-categories': reverse(GameCategoryListView.name, request=request),
             'games': reverse(GameListView.name, request=request),
             'scores': reverse(PlayerScoreListView.name, request=request),
-            'users': reverse(UserList.name, request=request)
+            'users': reverse(UserListView.name, request=request)
         })
 
 
-class UserList(generics.ListAPIView):
+class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     name = 'user-list'
 
 
-class UserDetail(generics.RetrieveAPIView):
+class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     name = 'user-detail'
@@ -71,9 +70,7 @@ class GameListView(generics.ListCreateAPIView):
     serializer_class = GameSerializer
     name = 'game-list'
     permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
-    filter_fields = (
-        'name', 'game_category', 'release_date', 'played', 'owner',
-    )
+    filter_fields = ('name', 'game_category', 'release_date', 'played', 'owner',)
     search_fields = ('^name',)
     ordering_fields = ('name', 'release_date',)
 
@@ -103,10 +100,27 @@ class PlayerDetailView(generics.RetrieveUpdateDestroyAPIView):
     name = 'player-detail'
 
 
+class PlayerScoreFilterView(FilterSet):
+    min_score = NumberFilter(name='score', lookup_expr='gte')
+    max_score = NumberFilter(name='score', lookup_expr='lte')
+    from_score_date = DateTimeFilter(name='score_date', lookup_expr='gte')
+    to_score_date = DateTimeFilter(name='score_date', lookup_expr='lte')
+    player_name = AllValuesFilter(name='player__name')
+    game_name = AllValuesFilter(name='game__name')
+
+    class Meta:
+        model = PlayerScore
+        fields = [
+            'score', 'from_score_date', 'to_score_date', 'min_score', 'max_score', 'player_name', 'game_name'
+        ]
+
+
 class PlayerScoreListView(generics.ListCreateAPIView):
     queryset = PlayerScore.objects.all()
     serializer_class = PlayerScoreSerializer
     name = 'playerscore-list'
+    filter_class = PlayerScoreFilterView
+    ordering_fields = ('score', 'score_date',)
 
 
 class PlayerScoreDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -152,4 +166,3 @@ def game_detail(request, pk):
     elif request.method == 'DELETE':
         game.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-

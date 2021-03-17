@@ -43,8 +43,10 @@ INSTALLED_APPS = [
     # third-party apps
     'rest_framework',
     'crispy_forms',
+    'django_filters',
+    'django_nose',
 
-    # games app
+    # gamesapi apps
     'games.apps.GamesConfig',
 ]
 
@@ -134,7 +136,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'games.pagination.LimitOffsetPaginationWithMaxLimit',
     'PAGE_SIZE': 5,
     'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework.filters.DjangoFilterBackend',
+        'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ),
@@ -152,6 +154,13 @@ REST_FRAMEWORK = {
         'game-categories': '30/hour'
     }
 }
+
+# django_nose
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = [
+    '--with-coverage', '--cover-erase', '--cover-inclusive', '--cover-package=games'
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/

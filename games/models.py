@@ -6,6 +6,7 @@ class GameCategory(models.Model):
 
     class Meta:
         ordering = ('name',)
+        verbose_name_plural = 'Game Categories'
 
     def __str__(self):
         return self.name
